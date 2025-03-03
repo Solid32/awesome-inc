@@ -1,7 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 import psycopg2
-from pydantic import BaseModel
-from params import DB_USER, DB_PASSWORD
+from src.params import DB_USER, DB_PASSWORD, ALLOWED_TABLES
 
 app = FastAPI()
 
@@ -13,20 +12,24 @@ def get_db_connection():
     conn = psycopg2.connect(host=DB_HOST, dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD, port=DB_PORT)
     return conn
 
-class Row(BaseModel):
-    column1: str
-    column2: str
-    column3: str
 
-@app.get("/api/data")
-def get_data():
-    conn = get_db_connection()
-    pointer = conn.cursor()
-    pointer.execute('SELECT * FROM country LIMIT 10;') 
-    rows = pointer.fetchall()
-   
-    pointer.close()
-    conn.close()
+@app.get("/api/{table}")
+def get_data(table : str):
+    if table not in ALLOWED_TABLES:
+        raise HTTPException(status_code=400, detail="Table non autorisée")
 
-    return rows
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        query = f'SELECT * FROM {table} LIMIT 10;'
+        cursor.execute(query)
+        rows = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        return {"data": rows}
+    except psycopg2.Error as e:
+        raise HTTPException(status_code=500, detail=f"Erreur SQL: {str(e)}")
 
