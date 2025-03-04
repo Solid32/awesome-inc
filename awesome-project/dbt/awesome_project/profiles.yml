@@ -1,0 +1,12 @@
+awesome_project:
+  outputs:
+    dev:
+      dbname: awesomeinc
+      host: host.docker.internal
+      pass: wannasucceed
+      port: 5432
+      schema: public
+      threads: 1
+      type: postgres
+      user: interviewee
+  target: dev
