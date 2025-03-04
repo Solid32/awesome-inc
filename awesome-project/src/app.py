@@ -22,11 +22,25 @@ class DataApi():
             
         try: 
             cursor = self.conn.cursor()
-            query = f'SELECT * FROM {table};'
-            cursor.execute(query)
-            rows = cursor.fetchall()
-    
-            return {"data": rows}
+            query_columns = f"""
+                        SELECT column_name
+                        FROM information_schema.columns
+                        WHERE table_schema = 'public'
+                        AND table_name   = '{table}'
+                             """
+            cursor.execute(query_columns)
+            columns_raw = cursor.fetchall()
+            query_value = f""" 
+                          SELECT * 
+                          FROM {table}
+                           """
+            cursor.execute(query_value)
+            value_raw = cursor.fetchall()
+            
+            columns = [col[0] for col in columns_raw]  
+
+            formatted_data = [dict(zip(columns, row)) for row in value_raw]     
+            return formatted_data
         
         except psycopg2.Error as e:
             raise HTTPException(status_code=500, detail=f"Error SQL: {str(e)}")
